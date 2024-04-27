@@ -1,0 +1,108 @@
+---
+title: "Raising Awareness of the Prevalence of Health Inequalties"
+subtitle: "Analysis, with the use of Visualisations"
+author: Paula Duffy
+date: "04-25-2024"
+format: html
+toc: true
+theme: Lumen
+backgroundcolor: white
+execute: 
+  echo: false
+  warning: false
+  message: false
+  
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+#libraries
+library(tidyverse)
+library("maps")
+library(plotly)
+
+#Data
+metadata <- read_csv("unicef_metadata.csv")
+indicator <- read_csv("unicef_indicator_2.csv")
+
+#Transformations
+data_join <- full_join(metadata, indicator)
+data_join <- full_join(metadata, indicator, by =c("country" = "country", "year" = "time_period"))
+data_join <- metadata %>%
+  full_join(indicator)  
+```
+
+## Life expectancy at birth, total (years)
+
+The scatterplot illustrates the upward trend of life expectancy from 1960 to 2020 across various countries worldwide. Each data point represents a country, with its position on the scatterplot corresponding to its life expectancy in years for a particular year. This visualization offers a compelling snapshot of global health progress over the past six decades, showcasing the steady increase in life expectancy across diverse populations. Analyzing this scatterplot provides valuable insights into the advancements in healthcare, improvements in living standards, and the effectiveness of public health interventions over time. Moreover, it underscores the importance of ongoing efforts to promote health and well-being globally, highlighting the potential for further gains in life expectancy through continued investment in healthcare infrastructure and public health initiatives.
+
+```{r}
+#Scatterplot
+ggplot(metadata, aes(x = year, y = `Life expectancy at birth, total (years)`)) +
+  geom_point() +
+  labs(title = "Scatter Plot of Life Expectancy at Birth Over Time",
+       x = "Year",
+       y = "Life Expectancy at Birth (years)")
+```
+
+## Top 10 Countries based on GDP
+
+The bar chart below displays the top 10 countries by Gross Domestic Product (GDP) and offers a lens into how economic strength might influence health inequalities globally. By showcasing the wealthiest nations, it underscores the potential correlation between economic prosperity and access to healthcare resources. Countries with higher GDPs typically have greater financial capacity to invest in healthcare infrastructure, research, and public health programs, potentially leading to reduced health disparities within their populations. However, it also highlights disparities between affluent and lower-income countries, where limited economic resources may exacerbate health inequalities. Understanding these dynamics is crucial for addressing health disparities and promoting equitable access to healthcare on a global scale.
+
+```{r}
+#Bar Chart
+# Group by country and calculate total GDP
+country_gdp <- data_join %>%
+  group_by(country) %>%
+  summarise(total_gdp = sum(`GDP per capita (constant 2015 US$)`))
+
+# Select the top 10 countries based on GDP
+top_10_gdp_countries <- country_gdp %>%
+  top_n(10, total_gdp)
+
+# Filter data_join to include only the top 10 countries by GDP
+filtered_data_join <- data_join %>%
+  filter(country %in% top_10_gdp_countries$country)
+  
+ggplot(top_10_gdp_countries, aes(x = country, y = total_gdp)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "GDP per Capita by Country (Year: 2020)",
+       x = "Country",
+       y = "Total GDP")
+```
+## Population Changes Over Time
+
+In this time series, we observe how countries' populations change over time, offering insights into demographic trends worldwide. From historical records to present-day data, the visualization tracks fluctuations in population sizes, reflecting shifts in birth rates, mortality rates, migration patterns, and socio-economic factors. This dynamic portrayal highlights the diverse demographic trajectories of different countries, providing valuable insights into global population dynamics.
+
+```{r}
+#Timeseries
+ggplot(metadata) +
+  (aes(year, 'population, total', color = country)) +
+  geom_line()
+
+```
+## Map of the World Ranking GDP's
+
+The world map portrays countries according to their Gross Domestic Product (GDP), showcasing both the economic powerhouses and those with more modest economic output. Vibrant hues represent nations with the lowest GDP, indicating their economic prowess and dominance on the global stage. These countries typically boast robust economies, thriving industries, and significant contributions to global trade and commerce. In contrast, countries with lighter colors signify the richest economies, highlighting their economic challenges and disparities. These nations often grapple with limited resources, underdeveloped infrastructure, and socio-economic inequalities. By visually mapping GDP disparities across the world, the visualization offers valuable insights into global economic dynamics and disparities, underscoring the importance of targeted interventions and equitable economic development initiatives to address socio-economic imbalances on a global scale.
+
+```{r}
+#Map
+map_world <- map_data("world")
+
+world_gdp <- full_join(country_gdp, map_world, by = c("country" = "region"))
+
+ggplot(world_gdp) +
+  aes(x = long, y = lat, group = group, fill = `total_gdp`) +
+  geom_polygon()
+
+options(scipen = 999)
+```
+
+
+
+
+
+
+
